@@ -1,33 +1,46 @@
 import { Request, Response } from "express";
 import { Category } from "../types/category";
+import { prisma } from "../lib/db";
 
 let categories: Category[] = [];
 
 //1 menapilkan list category
-export const getCategories = (req : Request, res : Response) => {
-    res.json(categories);
+export const getCategories = async (req : Request, res : Response) => {
+    
+    try{
+
+        const allEvents = await prisma.category.findMany({
+            orderBy: {
+                createdAt: "desc",
+            },        
+        });
+
+        res.json(allEvents);       
+    }catch (error) {
+
+        res.status(500).json({
+            message: "Gagal mengambil data event",
+            error,
+        });
+    }
 };
 
 //2 menyimpan data category
-export const createCategory = (req : Request, res : Response) => {
-    const { name } = req.body;
-    
+export const createCategory = async (req : Request, res : Response) => {
+    const { name, createdAt } = req.body;
         //buat validasi sederhana, apabila nama belum diisi
-        if (!name) {
-            res.status(500).json({ message: "Nama category harus diisi" });
+        if (!name !) {
+            res.status(500).json({ message: "Nama category dan createdAt harus diisi" });
         }
-    
         // jika validasi berhasil
-        const newCategories: Category = {
-            id: Date.now(),
-            name: name,
-        };
-    
-        // jika sudah disusun, simpan ke array/database
-        categories.push(newCategories);
-    
-        // jika data berhasil disimpan 
-        res.status(200).json({message: "Data berhasil disimpan", category: newCategories});
+        const newCategory = await prisma.category.create({
+            data: {
+                name,
+                createdAt,
+            },
+        })
+
+        res.status(200).json(newCategory);
 };
 
 
